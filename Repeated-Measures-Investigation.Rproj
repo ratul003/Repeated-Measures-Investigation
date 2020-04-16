@@ -1,0 +1,368 @@
+```{r,echo=TRUE,warning=FALSE,message=FALSE}
+library(knitr)
+library(ggplot2)
+library(alr4)
+library(tidyverse)
+library(emmeans)
+#
+```
+
+
+```{r , echo=FALSE}
+library(lme4)
+#library(pbkrtest)
+```
+
+
+## Getting Started
+
+There are a number of situations that can arise when the analysis includes between groups effects as well as within subject effects. We start by showing 4 example analyses using measurements of depression over 3 time points broken down by 2 treatment groups. 
+
+In the first example we see that the two groups differ in depression but neither group changes over time. In the second example the two groups grow in depression but at the same rate over time. In the third example, the two groups start off being quite different in depression but end up being rather close in depression. The fourth example shows the groups starting off at the same level of depression, and one group group increases over time whereas the other group decreases over time.
+
+
+## First Example
+
+The between groups test indicates that the variable group is significant, consequently in the graph we see that the lines for the two groups are rather far apart. The within subject test indicate that there is not a significant time effect, in other words, the groups do not change in depression over time. In the graph we see that the groups have lines that are flat, i.e. the slopes of the lines are approximately equal to zero. Also, since the lines are parallel, we are not surprised that the interaction between time and group is not significant.
+
+```{r}
+demo1  <- read.csv("https://stats.idre.ucla.edu/stat/data/demo1.csv")
+## Convert variables to factor
+demo1 <- within(demo1, {
+  group <- factor(group)
+  time <- factor(time)
+  id <- factor(id)
+})
+
+with(demo1, interaction.plot(time, group, pulse,
+                             ylim = c(5, 20), lty= c(1, 12), lwd = 3,
+                             ylab = "mean of pulse", xlab = "time", trace.label = "group"))
+
+#demo1.aov <- aov(pulse ~ group * time + Error(id), data = demo1)
+#summary(demo1.aov)
+
+demo1.lmer <-lmer(pulse ~ group*time + (1|id), REML=FALSE,data=demo1)
+summary(demo1.lmer)
+plot(allEffects(demo1.lmer))
+# model with no interaction
+demo1noint.lmer <-lmer(pulse ~ group+time + (1|id), REML=FALSE,data=demo1)
+summary(demo1noint.lmer)
+anova(demo1noint.lmer,demo1.lmer,test="LRT")
+#
+demo1lt.lmer <- lmerTest::lmer(pulse ~ group*time + (1|id), REML=TRUE,data=demo1)
+anova(demo1lt.lmer)
+anova(demo1lt.lmer,type=2,ddf="Kenward-Roger")
+
+```
+
+
+## Demo Analysis 2
+
+The between groups test indicates that the variable group is not significant, consequently in the graph we see that the lines for the two groups are rather close together. The within subject test indicate that there is a significant time effect, in other words, the groups do change in depression over time. In the graph we see that the groups have lines that increase over time. Again, the lines are parallel consistent with the finding that the interaction is not significant.
+
+```{r}
+demo2 <- read.csv("https://stats.idre.ucla.edu/stat/data/demo2.csv")
+## Convert variables to factor
+demo2 <- within(demo2, {
+  group <- factor(group)
+  time <- factor(time)
+  id <- factor(id)
+})
+
+
+with(demo2, interaction.plot(time, group, pulse,
+                             ylim = c(10, 40), lty = c(1, 12), lwd = 3,
+                             ylab = "mean of pulse", xlab = "time", trace.label = "group"))
+
+
+mat <- with(demo2, matrix(c(pulse[time==1], pulse[time==2], pulse[time==3]), ncol = 3))
+cor(mat)
+
+
+#demo2.aov <- aov(pulse ~ group * time + Error(id), data = demo2)
+#summary(demo2.aov)
+
+demo2.lmer <-lmer(pulse ~ group*time + (1|id), REML=FALSE,data=demo2)
+summary(demo2.lmer)
+plot(allEffects(demo2.lmer))
+# model with no interaction
+demo2noint.lmer <-lmer(pulse ~ group+time + (1|id), REML=FALSE,data=demo2)
+summary(demo2noint.lmer)
+anova(demo2noint.lmer,demo2.lmer,test="LRT")
+#
+demo2lt.lmer <- lmerTest::lmer(pulse ~ group*time + (1|id), REML=TRUE,data=demo2)
+anova(demo2lt.lmer)
+anova(demo2lt.lmer,type=2,ddf="Kenward-Roger")
+
+
+```
+
+
+## Demo Analysis 3
+
+The between groups test indicates that the variable group is significant, consequently in the graph we see that the lines for the two groups are rather far apart. The within subject test indicate that there is a significant time effect, in other words, the groups do change over time, both groups are getting less depressed over time. Moreover, the interaction of time and group is significant which means that the groups are changing over time but are changing in different ways, which means that in the graph the lines will not be parallel. In the graph we see that the groups have non-parallel lines that decrease over time and are getting progressively closer together over time.
+
+```{r}
+demo3 <- read.csv("https://stats.idre.ucla.edu/stat/data/demo3.csv")
+## Convert variables to factor
+demo3 <- within(demo3, {
+  group <- factor(group)
+  time <- factor(time)
+  id <- factor(id)
+})
+
+with(demo3, interaction.plot(time, group, pulse,
+                             ylim = c(10, 60), lty = c(1, 12), lwd = 3,
+                             ylab = "mean of pulse", xlab = "time", trace.label = "group"))
+
+#demo3.aov <- aov(pulse ~ group * time + Error(id), data = demo3)
+#summary(demo3.aov)
+#
+demo3.lmer <-lmer(pulse ~ group*time + (1|id), REML=FALSE,data=demo3)
+summary(demo3.lmer)
+plot(allEffects(demo3.lmer))
+# model with no interaction
+demo3noint.lmer <-lmer(pulse ~ group+time + (1|id), REML=FALSE,data=demo3)
+summary(demo3noint.lmer)
+anova(demo3noint.lmer,demo3.lmer,test="LRT")
+#
+demo3lt.lmer <- lmerTest::lmer(pulse ~ group*time + (1|id), REML=TRUE,data=demo3)
+anova(demo3lt.lmer)
+anova(demo3lt.lmer,type=2,ddf="Kenward-Roger")
+```
+
+
+## Demo Analysis 4
+
+The within subject test indicate that the interaction of time and group is significant. The main effect of time is not significant. However, the significant interaction indicates that the groups are changing over time and they are changing in different ways, in other words, in the graph the lines of the groups will not be parallel. The between groups test indicates that there the variable group is significant. In the graph for this particular case we see that one group is increasing in depression over time and the other group is decreasing in depression over time.
+
+
+```{r}
+demo4 <- read.csv("https://stats.idre.ucla.edu/stat/data/demo4.csv")
+## Convert variables to factor
+demo4 <- within(demo4, {
+  group <- factor(group)
+  time <- factor(time)
+  id <- factor(id)
+})
+
+with(demo4, interaction.plot(time, group, pulse,
+                             ylim = c(10, 60), lty = c(1, 12), lwd = 3,
+                             ylab = "mean of pulse", xlab = "time", trace.label = "group"))
+
+#demo4.aov <- aov(pulse ~ group * time + Error(id), data = demo4)
+#summary(demo4.aov)
+#
+demo4.lmer <-lmer(pulse ~ group*time + (1|id), REML=FALSE,data=demo4)
+summary(demo4.lmer)
+plot(allEffects(demo4.lmer))
+# model with no interaction
+demo4noint.lmer <-lmer(pulse ~ group+time + (1|id), REML=FALSE,data=demo4)
+summary(demo4noint.lmer)
+anova(demo4noint.lmer,demo4.lmer,test="LRT")
+#
+demo4lt.lmer <- lmerTest::lmer(pulse ~ group*time + (1|id), REML=TRUE,data=demo4)
+anova(demo4lt.lmer)
+anova(demo4lt.lmer,type=2,ddf="Kenward-Roger")
+```
+
+
+## Exercise data
+
+The data called exer, consists of people who were randomly assigned to two different diets: low-fat and not low-fat and three different types of exercise: at rest, walking leisurely and running. Their pulse rate was measured at three different time points during their assigned exercise: at 1 minute, 15 minutes and 30 minutes.
+
+```{r}
+exer <- read.csv("https://stats.idre.ucla.edu/stat/data/exer.csv")
+## Convert variables to factor
+exer <- within(exer, {
+  diet <- factor(diet)
+  exertype <- factor(exertype)
+  time <- factor(time)
+  id <- factor(id)
+})
+str(exer)
+```
+
+
+### Summary Statistics
+
+```{r}
+exer %>% group_by(exertype,time) %>% summarise(mpulse = mean(pulse),n=n())
+exer %>% group_by(diet,time) %>% summarise(mpulse = mean(pulse),n=n())
+
+```
+
+
+### Graphical Displays
+
+```{r}
+with(exer, interaction.plot(time, diet, pulse,
+                            ylim = c(90, 110), lty = c(1, 12), lwd = 3,
+                            ylab = "mean of pulse", xlab = "time", trace.label = "diet"))
+#
+with(exer, interaction.plot(time, exertype, pulse,
+                            ylim = c(80, 130), lty = c(1, 2, 4), lwd = 2,
+                            ylab = "mean of pulse", xlab = "time"))
+
+```
+
+
+## Model Results
+
+
+
+### aov methods
+
+I don't recommend using aov for repeated measures, this content only here temporarily for reference.
+
+Looking at the results we conclude that the effect of time is significant but the interaction of time and diet is not significant. The between subject test of the effect of diet is also not significant. Consequently, in the graph we have lines that are not flat, in fact, they are actually increasing over time, which was expected since the effect of time was significant. Furthermore, the lines are approximately parallel which was anticipated since the interaction was not significant.
+
+```{r}
+diet.aov <- aov(pulse ~ diet * time + Error(id), data = exer)
+summary(diet.aov)
+```
+
+
+The interaction of time and exertype is significant as is the effect of time. The between subject test of the effect of exertype is also significant. Consequently, in the graph we have lines that are not parallel which we expected since the interaction was significant. Furthermore, we see that some of the lines that are rather far apart and at least one line is not horizontal which was anticipated since exertype and time were both significant.
+
+```{r}
+exertype.aov <- aov(pulse ~ exertype * time + Error(id), data = exer)
+summary(exertype.aov)
+```
+
+The analysis of the variance and correlation matrices, shows evidence that variation changes across time (time advances 1,2,3 across both columns and rows).  The correlation matrix is roughly consistent with the assumption of constant correlation for each pair of time points, that is, all correlations equal.  Maybe a little bit of evidence against this presumption because $Corr(y_{2},y_{3})=.85$ and this is much higher than between periods (1,2), and (1,3).
+
+```{r}
+mat <- with(exer, matrix(c(pulse[time==1], pulse[time==2], pulse[time==3]), ncol = 3))
+var(mat)
+cor(mat)
+#
+mat <- with(exer, matrix(c(pulse[time=="1"], pulse[time=="2"], pulse[time=="3"]), ncol = 3))
+var(mat)
+cor(mat)
+```
+
+
+### lmer methods:  Fixed Effects Development
+
+In this example I will consider time as a factor variable (nice even spacing, might be a reasonable choice).
+
+```{r}
+full.lmer <- lmer(pulse ~ time*exertype*diet + (1|id), data = exer, REML=FALSE)
+no3.lmer <- lmer(pulse ~ time*(exertype+diet) + (1|id), data = exer, REML=FALSE)
+anova(no3.lmer,full.lmer,test="LRT")
+no3.lmer <- lmer(pulse ~ (exertype*diet) + time + (1|id), data = exer, REML=FALSE)
+anova(no3.lmer,full.lmer,test="LRT")
+```
+
+The output shows that the full.lmer model (very complex) is needed over the other models tested.
+
+#### Use lmerTest functions
+
+```{r}
+#
+demoexlt.lmer <- lmerTest::lmer(pulse ~ time*exertype*diet + (1|id), REML=TRUE,data=exer)
+anova(demoexlt.lmer)
+anova(demoexlt.lmer,type=2,ddf="Kenward-Roger")
+```
+
+
+This output shows evidence the three factor interaction time:exertype:diet is needed.
+
+#### Consider Random Effects
+
+This example is to illustrate lmer, so no correlation (sigma matrix) structure will be examined.
+
+Here we consider random intercepts, no random slopes or curvatures because time is handled as a factor and not as a quantitative variable.
+```{r}
+fullR.lmer <- lmer(pulse ~ time*exertype*diet + (1|id), data = exer, REML=TRUE)
+summary(fullR.lmer)
+```
+
+
+
+
+
+#### Residuals
+
+
+```{r,eval=TRUE}
+resids<-resid(full.lmer)
+fittedvals<-fitted(full.lmer)
+demolmerdframe<-data.frame(exer,resids,fittedvals)
+```
+
+```{r}
+mat <- with(demolmerdframe, matrix(c(resids[time=="1"], resids[time=="2"], resids[time=="3"]), ncol = 3))
+var(mat)
+cor(mat)
+```
+
+Correlations among residuals are smaller than in original data, but there may be some un-modeled structure in the sigma matrix that should be handled.
+
+```{r,eval=TRUE}
+p <- ggplot(data = demolmerdframe, aes(x = time, y = resids))
+p + geom_point(aes(colour=diet),size = 1.5,alpha=.5) + 
+geom_hline(yintercept=0) + 
+facet_wrap(~ exertype) + 
+scale_colour_hue("Diet \nLevel",
+breaks=c("1","2"),
+labels=c("Diet1","Diet2")) +
+xlab("Time") + ylab("Residuals")
+```
+
+```{r,eval=TRUE}
+p <- ggplot(data = demolmerdframe, aes(x = fittedvals, y = resids))
+p + geom_point(aes(colour=diet),size = 1.5,alpha=.8) + 
+geom_hline(yintercept=0) + geom_smooth(se=TRUE,span=.95) +
+scale_colour_hue("Diet \nLevel",
+breaks=c("1","2"),
+labels=c("Diet1","Diet2")) +
+xlab("Predicted Values") + ylab("Residuals")
+```
+
+
+#### Effect Plots
+
+```{r}
+plot(allEffects(full.lmer))
+```
+
+
+#### emmeans analysis of lmer model
+
+```{r,eval=TRUE}
+summary(full.lmer)
+# Using emmeans:
+emmeans(full.lmer, list(pairwise~exertype|diet),at=list(time="2"))
+confint(emmeans(full.lmer, list(pairwise~exertype|diet)))
+CLD(emmeans(full.lmer, list(pairwise~exertype|diet),at=list(time="2")))
+#
+emmeans(full.lmer, list(pairwise~exertype|diet),at=list(time="3"))
+confint(emmeans(full.lmer, list(pairwise~exertype|diet)))
+CLD(emmeans(full.lmer, list(pairwise~exertype|diet),at=list(time="3")))
+```
+
+```{r,eval=TRUE}
+emmip(full.lmer, exertype:diet ~ time)
+emmeans(full.lmer, pairwise ~ exertype, at=list(time="3",diet="1"))
+emmeans(full.lmer, pairwise ~ diet | exertype)
+```
+
+#### Contrasts
+
+The next block contains a comparison of pulse rates at (D=1,Exer=2,Time=3) vs (D=1,Exer=3,Time=3)
+```{r}
+# Diet1, Ex2, T3:
+D1E2T3<-c(1,0,1,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0)
+# Diet1, Ex3, T3:
+D1E3T3<-c(1,0,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0)
+# Difference between Ex2 - Ex3 
+chgTest <- D1E2T3 - D1E3T3
+K <- matrix(chgTest,1)
+object<-multcomp::glht(full.lmer,linfct=K)
+summary(object)
+confint(object)$confint
+```
+
+There is clear evidence exercise type 3 has notably higher pulse than type=2, for diet 1.
